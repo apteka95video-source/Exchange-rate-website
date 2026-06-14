@@ -1,32 +1,50 @@
 const DATA_URL = "./data/currency_rates.json";
+const EXCEL_SOURCE = "Міжбанк";
+const NBU_SOURCE = "НБУ API";
+const DISPLAY_LIMIT = 10;
 
 const state = {
   records: [],
-  search: "",
-  source: "",
-};
-
-const SOURCE_GROUPS = {
-  excel: ["Міжбанк", "Company Excel"],
-  nbu: ["НБУ API", "NBU API"],
+  excelRecords: [],
+  filters: {
+    currency: "",
+    dateFrom: "",
+    dateTo: "",
+    dateSearch: "",
+  },
+  showAllRows: false,
+  chart: null,
 };
 
 const elements = {
-  currencyCount: document.querySelector("#currencyCount"),
-  sourceCount: document.querySelector("#sourceCount"),
-  recordCount: document.querySelector("#recordCount"),
-  latestDate: document.querySelector("#latestDate"),
-  excelSourceCount: document.querySelector("#excelSourceCount"),
-  nbuSourceCount: document.querySelector("#nbuSourceCount"),
-  searchInput: document.querySelector("#searchInput"),
-  sourceFilter: document.querySelector("#sourceFilter"),
+  datasetStatus: document.querySelector("#datasetStatus"),
+  excelUsdRate: document.querySelector("#excelUsdRate"),
+  excelUsdDate: document.querySelector("#excelUsdDate"),
+  excelEurRate: document.querySelector("#excelEurRate"),
+  excelEurDate: document.querySelector("#excelEurDate"),
+  nbuUsdRate: document.querySelector("#nbuUsdRate"),
+  nbuUsdDate: document.querySelector("#nbuUsdDate"),
+  nbuEurRate: document.querySelector("#nbuEurRate"),
+  nbuEurDate: document.querySelector("#nbuEurDate"),
+  currencyFilter: document.querySelector("#currencyFilter"),
+  dateFrom: document.querySelector("#dateFrom"),
+  dateTo: document.querySelector("#dateTo"),
+  dateSearch: document.querySelector("#dateSearch"),
   resetButton: document.querySelector("#resetButton"),
-  comparisonTableBody: document.querySelector("#comparisonTableBody"),
+  chartSubtitle: document.querySelector("#chartSubtitle"),
+  ratesChart: document.querySelector("#ratesChart"),
+  calcAmount: document.querySelector("#calcAmount"),
+  calcCurrency: document.querySelector("#calcCurrency"),
+  calcDate: document.querySelector("#calcDate"),
+  calcResult: document.querySelector("#calcResult"),
+  calcRateInfo: document.querySelector("#calcRateInfo"),
+  tableRangeInfo: document.querySelector("#tableRangeInfo"),
+  toggleRowsButton: document.querySelector("#toggleRowsButton"),
   tableBody: document.querySelector("#ratesTableBody"),
   emptyState: document.querySelector("#emptyState"),
 };
 
-async function loadRates() {
+async function init() {
   try {
     const response = await fetch(DATA_URL);
 
@@ -35,156 +53,286 @@ async function loadRates() {
     }
 
     const payload = await response.json();
-    state.records = Array.isArray(payload.records) ? payload.records : [];
-    populateSourceFilter(state.records);
-    render();
+    state.records = normalizeRecords(payload.records || []);
+    state.excelRecords = state.records.filter((record) => record.source === EXCEL_SOURCE);
+
+    setDefaultDateInputs();
+    renderDashboard();
+    fetchLatestNbuRates();
   } catch (error) {
-    elements.tableBody.innerHTML = "";
-    elements.comparisonTableBody.innerHTML = "";
+    elements.datasetStatus.textContent = "Помилка завантаження даних";
     elements.emptyState.hidden = false;
-    elements.emptyState.textContent = "Currency data could not be loaded.";
+    elements.emptyState.textContent = "Не вдалося завантажити JSON з курсами.";
     console.error(error);
   }
 }
 
-function populateSourceFilter(records) {
-  elements.sourceFilter.innerHTML = '<option value="">All sources</option>';
-
-  const sources = [...new Set(records.map((record) => record.source).filter(Boolean))].sort();
-
-  for (const source of sources) {
-    const option = document.createElement("option");
-    option.value = source;
-    option.textContent = source;
-    elements.sourceFilter.append(option);
-  }
+function normalizeRecords(records) {
+  return records
+    .map((record, index) => ({
+      rowNumber: index + 2,
+      date: String(record.date || ""),
+      currency: normalizeCurrency(record.currency),
+      currencyName: String(record.currency_name || ""),
+      rate: Number(record.buy_rate),
+      source: String(record.source || ""),
+      comment: String(record.comment || ""),
+    }))
+    .filter((record) => record.date && record.currency && Number.isFinite(record.rate));
 }
 
-function render() {
-  const filteredRecords = state.records.filter(matchesFilters);
-
-  renderSummary(filteredRecords);
-  renderSourceCards(state.records);
-  renderComparison(filteredRecords);
-  renderTable(filteredRecords);
-
-  elements.emptyState.hidden = filteredRecords.length > 0;
+function normalizeCurrency(currency) {
+  const value = String(currency || "").toUpperCase();
+  return value === "EURO" ? "EUR" : value;
 }
 
-function matchesFilters(record) {
-  const query = state.search.trim().toLowerCase();
-  const currency = String(record.currency || "").toLowerCase();
-  const currencyName = String(record.currency_name || "").toLowerCase();
-  const matchesQuery = !query || currency.includes(query) || currencyName.includes(query);
-  const matchesSource = !state.source || record.source === state.source;
+function setDefaultDateInputs() {
+  const dates = state.excelRecords.map((record) => record.date).sort();
+  const latestDate = dates.at(-1) || "";
 
-  return matchesQuery && matchesSource;
+  elements.calcDate.value = latestDate;
+  elements.datasetStatus.textContent = `${state.excelRecords.length} Excel-записів`;
 }
 
-function renderSummary(records) {
-  const currencies = new Set(records.map((record) => record.currency).filter(Boolean));
-  const sources = new Set(records.map((record) => record.source).filter(Boolean));
-  const latestDate = records
-    .map((record) => record.date)
-    .filter(Boolean)
-    .sort()
-    .at(-1);
+function renderDashboard() {
+  const filteredExcelRecords = getFilteredExcelRecords();
 
-  elements.currencyCount.textContent = currencies.size;
-  elements.sourceCount.textContent = sources.size;
-  elements.recordCount.textContent = records.length;
-  elements.latestDate.textContent = latestDate || "-";
+  renderLatestExcelCards();
+  renderChart(filteredExcelRecords);
+  renderCalculator();
+  renderTable(filteredExcelRecords);
 }
 
-function renderSourceCards(records) {
-  elements.excelSourceCount.textContent = countBySourceGroup(records, SOURCE_GROUPS.excel);
-  elements.nbuSourceCount.textContent = countBySourceGroup(records, SOURCE_GROUPS.nbu);
-}
+function getFilteredExcelRecords() {
+  return state.excelRecords.filter((record) => {
+    const matchesCurrency = !state.filters.currency || record.currency === state.filters.currency;
+    const matchesFrom = !state.filters.dateFrom || record.date >= state.filters.dateFrom;
+    const matchesTo = !state.filters.dateTo || record.date <= state.filters.dateTo;
+    const matchesSearch = !state.filters.dateSearch || record.date.includes(state.filters.dateSearch.trim());
 
-function countBySourceGroup(records, sourceNames) {
-  return records.filter((record) => sourceNames.includes(record.source)).length;
-}
-
-function renderComparison(records) {
-  elements.comparisonTableBody.innerHTML = "";
-
-  const latestRecords = latestByCurrencyAndSource(records);
-  const fragment = document.createDocumentFragment();
-
-  for (const record of latestRecords) {
-    const buyRate = Number(record.buy_rate);
-    const sellRate = Number(record.sell_rate);
-    const spread = sellRate - buyRate;
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td><strong>${escapeHtml(record.currency)}</strong></td>
-      <td><span class="source-pill">${escapeHtml(record.source)}</span></td>
-      <td>${escapeHtml(record.date)}</td>
-      <td>${formatNumber(buyRate)}</td>
-      <td>${formatNumber(sellRate)}</td>
-      <td>${formatNumber(spread)}</td>
-    `;
-
-    fragment.append(row);
-  }
-
-  elements.comparisonTableBody.append(fragment);
-}
-
-function latestByCurrencyAndSource(records) {
-  const latestRecords = new Map();
-
-  for (const record of records) {
-    const key = `${record.currency}|${record.source}`;
-    const current = latestRecords.get(key);
-
-    if (!current || String(record.date) > String(current.date)) {
-      latestRecords.set(key, record);
-    }
-  }
-
-  return [...latestRecords.values()].sort((a, b) => {
-    const currencyOrder = String(a.currency).localeCompare(String(b.currency));
-
-    if (currencyOrder !== 0) {
-      return currencyOrder;
-    }
-
-    return sourceRank(a.source) - sourceRank(b.source);
+    return matchesCurrency && matchesFrom && matchesTo && matchesSearch;
   });
 }
 
-function sourceRank(source) {
-  if (SOURCE_GROUPS.excel.includes(source)) {
-    return 1;
+function renderLatestExcelCards() {
+  const usdRecord = getLatestRecord(state.excelRecords, "USD");
+  const eurRecord = getLatestRecord(state.excelRecords, "EUR");
+
+  setRateCard(elements.excelUsdRate, elements.excelUsdDate, usdRecord);
+  setRateCard(elements.excelEurRate, elements.excelEurDate, eurRecord);
+}
+
+function getLatestRecord(records, currency) {
+  return records
+    .filter((record) => record.currency === currency)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .at(-1);
+}
+
+function setRateCard(rateElement, dateElement, record) {
+  if (!record) {
+    rateElement.textContent = "-";
+    dateElement.textContent = "Дата: немає даних";
+    return;
   }
 
-  if (SOURCE_GROUPS.nbu.includes(source)) {
-    return 2;
+  rateElement.textContent = formatRate(record.rate);
+  dateElement.textContent = `Дата: ${record.date}`;
+}
+
+async function fetchLatestNbuRates() {
+  await Promise.all([fetchNbuRate("USD"), fetchNbuRate("EUR")]);
+}
+
+async function fetchNbuRate(currency) {
+  const today = new Date();
+  const apiDate = formatApiDate(today);
+  const displayDate = today.toISOString().slice(0, 10);
+  const url = `https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=${currency}&date=${apiDate}&json`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`NBU request failed for ${currency}`);
+    }
+
+    const payload = await response.json();
+    const item = Array.isArray(payload) ? payload[0] : null;
+
+    if (!item) {
+      throw new Error(`NBU has no ${currency} data for ${displayDate}`);
+    }
+
+    const rate = Number(item.rate);
+    const rateDate = String(item.exchangedate || displayDate).split(".").reverse().join("-");
+
+    if (currency === "USD") {
+      elements.nbuUsdRate.textContent = formatRate(rate);
+      elements.nbuUsdDate.textContent = `Дата НБУ: ${rateDate}`;
+    } else {
+      elements.nbuEurRate.textContent = formatRate(rate);
+      elements.nbuEurDate.textContent = `Дата НБУ: ${rateDate}`;
+    }
+  } catch (error) {
+    if (currency === "USD") {
+      elements.nbuUsdRate.textContent = "-";
+      elements.nbuUsdDate.textContent = `НБУ недоступний: ${displayDate}`;
+    } else {
+      elements.nbuEurRate.textContent = "-";
+      elements.nbuEurDate.textContent = `НБУ недоступний: ${displayDate}`;
+    }
+
+    console.error(error);
+  }
+}
+
+function formatApiDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function renderChart(records) {
+  const labels = [...new Set(records.map((record) => record.date))].sort();
+  const usdData = buildSeries(labels, records, "USD");
+  const eurData = buildSeries(labels, records, "EUR");
+
+  elements.chartSubtitle.textContent = labels.length
+    ? `Період: ${labels[0]} - ${labels.at(-1)}`
+    : "Немає даних для графіка за обраними фільтрами.";
+
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: "USD з Excel",
+        data: usdData,
+        borderColor: "#22c55e",
+        backgroundColor: "rgba(34, 197, 94, 0.12)",
+        tension: 0.25,
+        spanGaps: true,
+        pointRadius: labels.length > 120 ? 0 : 2,
+      },
+      {
+        label: "EUR з Excel",
+        data: eurData,
+        borderColor: "#f59e0b",
+        backgroundColor: "rgba(245, 158, 11, 0.14)",
+        tension: 0.25,
+        spanGaps: true,
+        pointRadius: labels.length > 120 ? 0 : 2,
+      },
+    ],
+  };
+
+  if (state.chart) {
+    state.chart.data = chartData;
+    state.chart.update();
+    return;
   }
 
-  return 3;
+  state.chart = new Chart(elements.ratesChart, {
+    type: "line",
+    data: chartData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: "#cbd5e1",
+            usePointStyle: true,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${formatRate(context.parsed.y)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#94a3b8",
+            maxTicksLimit: 9,
+          },
+          grid: {
+            color: "rgba(148, 163, 184, 0.12)",
+          },
+        },
+        y: {
+          ticks: {
+            color: "#94a3b8",
+          },
+          grid: {
+            color: "rgba(148, 163, 184, 0.12)",
+          },
+        },
+      },
+    },
+  });
+}
+
+function buildSeries(labels, records, currency) {
+  const byDate = new Map();
+
+  for (const record of records) {
+    if (record.currency === currency) {
+      byDate.set(record.date, record.rate);
+    }
+  }
+
+  return labels.map((label) => byDate.get(label) ?? null);
+}
+
+function renderCalculator() {
+  const amount = Number(elements.calcAmount.value);
+  const currency = elements.calcCurrency.value;
+  const date = elements.calcDate.value;
+  const record = state.excelRecords.find((item) => item.currency === currency && item.date === date);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    elements.calcResult.textContent = "-";
+    elements.calcRateInfo.textContent = "Введіть суму більше нуля.";
+    return;
+  }
+
+  if (!record) {
+    elements.calcResult.textContent = "-";
+    elements.calcRateInfo.textContent = `Немає Excel-курсу ${currency} за ${date || "обрану дату"}.`;
+    return;
+  }
+
+  const converted = amount / record.rate;
+  elements.calcResult.textContent = `${formatAmount(converted)} ${currency}`;
+  elements.calcRateInfo.textContent = `Курс Excel: ${formatRate(record.rate)} UAH за 1 ${currency}, дата ${record.date}.`;
 }
 
 function renderTable(records) {
   elements.tableBody.innerHTML = "";
 
+  const sortedRecords = [...records].sort((a, b) => {
+    const dateOrder = b.date.localeCompare(a.date);
+    return dateOrder || a.currency.localeCompare(b.currency);
+  });
+  const visibleRecords = state.showAllRows ? sortedRecords : sortedRecords.slice(0, DISPLAY_LIMIT);
   const fragment = document.createDocumentFragment();
 
-  for (const record of records) {
-    const buyRate = Number(record.buy_rate);
-    const sellRate = Number(record.sell_rate);
-    const spread = sellRate - buyRate;
+  for (const record of visibleRecords) {
     const row = document.createElement("tr");
+    const badgeClass = record.currency.toLowerCase();
 
     row.innerHTML = `
+      <td>${record.rowNumber}</td>
       <td>${escapeHtml(record.date)}</td>
-      <td><strong>${escapeHtml(record.currency)}</strong></td>
-      <td>${escapeHtml(record.currency_name)}</td>
-      <td>${formatNumber(buyRate)}</td>
-      <td>${formatNumber(sellRate)}</td>
-      <td>${formatNumber(spread)}</td>
+      <td><span class="currency-badge ${badgeClass}">${escapeHtml(record.currency)}</span></td>
+      <td>${formatRate(record.rate)}</td>
       <td><span class="source-pill">${escapeHtml(record.source)}</span></td>
       <td>${escapeHtml(record.comment)}</td>
     `;
@@ -193,14 +341,39 @@ function renderTable(records) {
   }
 
   elements.tableBody.append(fragment);
-}
+  elements.emptyState.hidden = sortedRecords.length > 0;
 
-function formatNumber(value) {
-  if (!Number.isFinite(value)) {
-    return "0.00";
+  if (!sortedRecords.length) {
+    elements.tableRangeInfo.textContent = "Немає рядків за обраними фільтрами.";
+  } else if (state.showAllRows) {
+    elements.tableRangeInfo.textContent = `Показано всі ${sortedRecords.length} рядків з Excel за фільтрами.`;
+  } else {
+    const lastVisibleRow = visibleRecords.at(-1)?.rowNumber || "-";
+    const firstVisibleRow = visibleRecords[0]?.rowNumber || "-";
+    elements.tableRangeInfo.textContent = `Показано останні ${visibleRecords.length} рядків: Excel #${firstVisibleRow} - #${lastVisibleRow} з ${sortedRecords.length} знайдених.`;
   }
 
-  return value.toFixed(2);
+  elements.toggleRowsButton.textContent = state.showAllRows ? "Показати останні 10" : "Показати всі рядки";
+  elements.toggleRowsButton.disabled = sortedRecords.length <= DISPLAY_LIMIT;
+}
+
+function formatRate(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  return value.toFixed(4);
+}
+
+function formatAmount(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("uk-UA", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value);
 }
 
 function escapeHtml(value) {
@@ -212,22 +385,50 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-elements.searchInput.addEventListener("input", (event) => {
-  state.search = event.target.value;
-  render();
+elements.currencyFilter.addEventListener("change", (event) => {
+  state.filters.currency = event.target.value;
+  state.showAllRows = false;
+  renderDashboard();
 });
 
-elements.sourceFilter.addEventListener("change", (event) => {
-  state.source = event.target.value;
-  render();
+elements.dateFrom.addEventListener("change", (event) => {
+  state.filters.dateFrom = event.target.value;
+  state.showAllRows = false;
+  renderDashboard();
+});
+
+elements.dateTo.addEventListener("change", (event) => {
+  state.filters.dateTo = event.target.value;
+  state.showAllRows = false;
+  renderDashboard();
+});
+
+elements.dateSearch.addEventListener("input", (event) => {
+  state.filters.dateSearch = event.target.value;
+  state.showAllRows = false;
+  renderDashboard();
 });
 
 elements.resetButton.addEventListener("click", () => {
-  state.search = "";
-  state.source = "";
-  elements.searchInput.value = "";
-  elements.sourceFilter.value = "";
-  render();
+  state.filters.currency = "";
+  state.filters.dateFrom = "";
+  state.filters.dateTo = "";
+  state.filters.dateSearch = "";
+  state.showAllRows = false;
+  elements.currencyFilter.value = "";
+  elements.dateFrom.value = "";
+  elements.dateTo.value = "";
+  elements.dateSearch.value = "";
+  renderDashboard();
 });
 
-loadRates();
+elements.toggleRowsButton.addEventListener("click", () => {
+  state.showAllRows = !state.showAllRows;
+  renderTable(getFilteredExcelRecords());
+});
+
+elements.calcAmount.addEventListener("input", renderCalculator);
+elements.calcCurrency.addEventListener("change", renderCalculator);
+elements.calcDate.addEventListener("change", renderCalculator);
+
+init();

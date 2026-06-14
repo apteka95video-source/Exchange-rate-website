@@ -1,113 +1,145 @@
 <!doctype html>
-<html lang="en">
+<html lang="uk">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Currency Rates Comparison</title>
+    <title>Currency Intelligence Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <main class="page">
-      <header class="hero">
-        <p class="eyebrow">Excel &rarr; NBU API &rarr; JSON &rarr; GitHub Pages</p>
-        <h1>Currency Rates Comparison</h1>
-        <p class="intro">
-          Compare company-calculated Excel rates with official NBU rates from
-          one generated JSON file.
-        </p>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Excel rates + NBU market reference</p>
+          <h1>Currency Intelligence Dashboard</h1>
+          <p class="intro">
+            Професійний дашборд для пошуку курсів USD та EUR з Excel-файлу,
+            порівняння з актуальним курсом НБУ та аналізу історичної динаміки.
+          </p>
+        </div>
+        <div class="status-card">
+          <span>Дані сайту</span>
+          <strong id="datasetStatus">Завантаження...</strong>
+        </div>
       </header>
 
-      <section class="summary-grid" aria-label="Currency rates summary">
-        <article class="summary-card">
-          <span class="summary-label">Currencies</span>
-          <strong id="currencyCount">0</strong>
+      <section class="rate-grid" aria-label="Latest rates">
+        <article class="rate-card usd-card">
+          <span class="card-kicker">Excel USD</span>
+          <strong id="excelUsdRate">-</strong>
+          <small id="excelUsdDate">Дата: -</small>
         </article>
-        <article class="summary-card">
-          <span class="summary-label">Sources</span>
-          <strong id="sourceCount">0</strong>
+        <article class="rate-card eur-card">
+          <span class="card-kicker">Excel EUR</span>
+          <strong id="excelEurRate">-</strong>
+          <small id="excelEurDate">Дата: -</small>
         </article>
-        <article class="summary-card">
-          <span class="summary-label">Records</span>
-          <strong id="recordCount">0</strong>
+        <article class="rate-card usd-card nbu-card">
+          <span class="card-kicker">НБУ USD сьогодні</span>
+          <strong id="nbuUsdRate">-</strong>
+          <small id="nbuUsdDate">Дата: -</small>
         </article>
-        <article class="summary-card">
-          <span class="summary-label">Latest update</span>
-          <strong id="latestDate">-</strong>
-        </article>
-      </section>
-
-      <section class="source-grid" aria-label="Data sources">
-        <article class="source-card source-excel">
-          <span>Company Excel</span>
-          <strong id="excelSourceCount">0</strong>
-          <small>Internal calculated rates from the workbook</small>
-        </article>
-        <article class="source-card source-nbu">
-          <span>NBU API</span>
-          <strong id="nbuSourceCount">0</strong>
-          <small>Official exchange rates</small>
+        <article class="rate-card eur-card nbu-card">
+          <span class="card-kicker">НБУ EUR сьогодні</span>
+          <strong id="nbuEurRate">-</strong>
+          <small id="nbuEurDate">Дата: -</small>
         </article>
       </section>
 
-      <section class="controls" aria-label="Filters">
+      <section class="filters-panel" aria-label="Filters">
         <label>
-          Search
-          <input id="searchInput" type="search" placeholder="USD or Dollar">
-        </label>
-        <label>
-          Source
-          <select id="sourceFilter">
-            <option value="">All sources</option>
+          Валюта
+          <select id="currencyFilter">
+            <option value="">Усі</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
           </select>
         </label>
-        <button id="resetButton" type="button">Reset filters</button>
+        <label>
+          Від дати
+          <input id="dateFrom" type="date">
+        </label>
+        <label>
+          До дати
+          <input id="dateTo" type="date">
+        </label>
+        <label>
+          Пошук по даті
+          <input id="dateSearch" type="search" placeholder="2026-06-05">
+        </label>
+        <button id="resetButton" type="button">Скинути</button>
       </section>
 
-      <section class="comparison-section" aria-label="Latest rate comparison">
-        <div class="section-heading">
-          <h2>Latest comparison</h2>
-          <p>Newest rate by currency and source.</p>
-        </div>
-        <div class="table-wrap">
-          <table class="comparison-table">
-            <thead>
-              <tr>
-                <th>Currency</th>
-                <th>Source</th>
-                <th>Date</th>
-                <th>Buy rate</th>
-                <th>Sell rate</th>
-                <th>Spread</th>
-              </tr>
-            </thead>
-            <tbody id="comparisonTableBody"></tbody>
-          </table>
-        </div>
+      <section class="main-grid">
+        <article class="chart-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Динаміка курсів валют</h2>
+              <p id="chartSubtitle">Лінії USD та EUR за вибраний період.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="ratesChart"></canvas>
+          </div>
+        </article>
+
+        <aside class="calculator-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Історичний калькулятор</h2>
+              <p>Конвертація UAH за курсом з Excel на обрану дату.</p>
+            </div>
+          </div>
+          <div class="calculator-form">
+            <label>
+              Сума в UAH
+              <input id="calcAmount" type="number" min="0" step="0.01" value="10000">
+            </label>
+            <label>
+              Валюта
+              <select id="calcCurrency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </label>
+            <label>
+              Дата
+              <input id="calcDate" type="date">
+            </label>
+          </div>
+          <div class="calc-result">
+            <span>Результат</span>
+            <strong id="calcResult">-</strong>
+            <small id="calcRateInfo">Оберіть дату з Excel-даними.</small>
+          </div>
+        </aside>
       </section>
 
-      <section class="table-section" aria-label="Currency rates table">
+      <section class="table-section" aria-label="Excel rates table">
         <div class="section-heading table-heading">
-          <h2>All records</h2>
-          <p>Data generated from Excel and API imports.</p>
+          <div>
+            <h2>Курси з Excel</h2>
+            <p id="tableRangeInfo">Показано останні 10 рядків.</p>
+          </div>
+          <button id="toggleRowsButton" type="button" class="ghost-button">Показати всі рядки</button>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Currency</th>
-                <th>Currency name</th>
-                <th>Buy rate</th>
-                <th>Sell rate</th>
-                <th>Spread</th>
-                <th>Source</th>
-                <th>Comment</th>
+                <th>#</th>
+                <th>Дата</th>
+                <th>Валюта</th>
+                <th>Курс</th>
+                <th>Джерело</th>
+                <th>Коментар</th>
               </tr>
             </thead>
             <tbody id="ratesTableBody"></tbody>
           </table>
         </div>
-        <p id="emptyState" class="empty-state" hidden>No records match the current filters.</p>
+        <p id="emptyState" class="empty-state" hidden>За обраними фільтрами записів не знайдено.</p>
       </section>
     </main>
 
