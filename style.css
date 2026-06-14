@@ -158,11 +158,57 @@ h2 {
 
 .filters-panel {
   display: grid;
-  grid-template-columns: 150px repeat(3, minmax(150px, 1fr)) auto;
+  grid-template-columns: 160px minmax(260px, 1fr) minmax(280px, 420px) 160px 160px auto;
   gap: 14px;
-  align-items: end;
+  align-items: stretch;
   margin-bottom: 18px;
   padding: 18px;
+}
+
+.date-search-control {
+  grid-column: span 1;
+}
+
+.date-lookup-panel {
+  min-height: 70px;
+  padding: 12px 14px;
+  background: #0b1220;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.date-lookup-panel span,
+.date-lookup-panel small {
+  display: block;
+}
+
+.date-lookup-panel span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.date-lookup-panel strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.date-lookup-panel small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.date-lookup-panel.success {
+  border-color: rgba(34, 197, 94, 0.58);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12);
+}
+
+.date-lookup-panel.warning {
+  border-color: rgba(245, 158, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
 }
 
 label {
@@ -225,9 +271,12 @@ button:hover {
   margin-bottom: 18px;
 }
 
-.chart-panel,
+.chart-panel {
+  min-height: 360px;
+}
+
 .calculator-panel {
-  min-height: 420px;
+  min-height: 360px;
 }
 
 .section-heading {
@@ -245,7 +294,7 @@ button:hover {
 }
 
 .chart-wrap {
-  height: 330px;
+  height: 270px;
   padding: 4px 18px 18px;
 }
 
@@ -324,6 +373,14 @@ tbody tr:hover {
   background: rgba(148, 163, 184, 0.08);
 }
 
+tbody tr.highlight-row {
+  background: rgba(56, 189, 248, 0.13);
+}
+
+tbody tr.highlight-row:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
 .currency-badge {
   display: inline-flex;
   min-width: 48px;
@@ -374,6 +431,10 @@ tbody tr:hover {
 
   .filters-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .date-lookup-panel {
+    grid-column: 1 / -1;
   }
 }
 

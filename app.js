@@ -30,6 +30,7 @@ const elements = {
   dateFrom: document.querySelector("#dateFrom"),
   dateTo: document.querySelector("#dateTo"),
   dateSearch: document.querySelector("#dateSearch"),
+  dateLookupPanel: document.querySelector("#dateLookupPanel"),
   resetButton: document.querySelector("#resetButton"),
   chartSubtitle: document.querySelector("#chartSubtitle"),
   ratesChart: document.querySelector("#ratesChart"),
@@ -98,6 +99,7 @@ function renderDashboard() {
   const filteredExcelRecords = getFilteredExcelRecords();
 
   renderLatestExcelCards();
+  renderDateLookup();
   renderChart(filteredExcelRecords);
   renderCalculator();
   renderTable(filteredExcelRecords);
@@ -106,6 +108,8 @@ function renderDashboard() {
 function getFilteredExcelRecords() {
   const normalizedDateSearch = normalizeDateSearch(state.filters.dateSearch);
   const rawDateSearch = state.filters.dateSearch.trim();
+  const fallbackDate =
+    normalizedDateSearch && !hasExcelDate(normalizedDateSearch) ? findNearestDate(normalizedDateSearch) : "";
 
   return state.excelRecords.filter((record) => {
     const matchesCurrency = !state.filters.currency || record.currency === state.filters.currency;
@@ -113,10 +117,15 @@ function getFilteredExcelRecords() {
     const matchesTo = !state.filters.dateTo || record.date <= state.filters.dateTo;
     const matchesSearch =
       !rawDateSearch ||
+      (fallbackDate ? record.date === fallbackDate : false) ||
       (normalizedDateSearch ? record.date === normalizedDateSearch : record.date.includes(rawDateSearch));
 
     return matchesCurrency && matchesFrom && matchesTo && matchesSearch;
   });
+}
+
+function hasExcelDate(date) {
+  return state.excelRecords.some((record) => record.date === date);
 }
 
 function normalizeDateSearch(value) {
@@ -138,6 +147,96 @@ function normalizeDateSearch(value) {
 
   const [, day, month, year] = dateParts;
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function renderDateLookup() {
+  const query = state.filters.dateSearch.trim();
+  const normalizedDate = normalizeDateSearch(query);
+
+  elements.dateLookupPanel.classList.remove("success", "warning");
+
+  if (!query) {
+    elements.dateLookupPanel.innerHTML = `
+      <span>Пошук курсу</span>
+      <strong>Введіть дату</strong>
+      <small>Наприклад: 10.10.2022</small>
+    `;
+    return;
+  }
+
+  if (!normalizedDate) {
+    elements.dateLookupPanel.classList.add("warning");
+    elements.dateLookupPanel.innerHTML = `
+      <span>Пошук курсу</span>
+      <strong>Невірний формат дати</strong>
+      <small>Введіть дату як 10.10.2022 або 2022-10-10.</small>
+    `;
+    return;
+  }
+
+  const recordsForDate = state.excelRecords.filter((record) => record.date === normalizedDate);
+
+  if (recordsForDate.length) {
+    elements.dateLookupPanel.classList.add("success");
+    elements.dateLookupPanel.innerHTML = `
+      <span>Курс з Excel на ${escapeHtml(formatDisplayDate(normalizedDate))}</span>
+      <strong>${formatLookupRates(recordsForDate)}</strong>
+      <small>Знайдено ${recordsForDate.length} запис(и) за цією датою.</small>
+    `;
+    return;
+  }
+
+  const nearestDate = findNearestDate(normalizedDate);
+
+  elements.dateLookupPanel.classList.add("warning");
+  elements.dateLookupPanel.innerHTML = `
+    <span>На дату ${escapeHtml(formatDisplayDate(normalizedDate))} курсу немає</span>
+    <strong>Найближча дата: ${nearestDate ? escapeHtml(formatDisplayDate(nearestDate)) : "-"}</strong>
+    <small>${nearestDate ? formatLookupRates(state.excelRecords.filter((record) => record.date === nearestDate)) : "У Excel немає доступних дат."}</small>
+  `;
+}
+
+function formatLookupRates(records) {
+  const byCurrency = new Map();
+
+  for (const record of records) {
+    byCurrency.set(record.currency, record.rate);
+  }
+
+  const parts = [];
+
+  if (byCurrency.has("USD")) {
+    parts.push(`USD ${formatRate(byCurrency.get("USD"))}`);
+  }
+
+  if (byCurrency.has("EUR")) {
+    parts.push(`EUR ${formatRate(byCurrency.get("EUR"))}`);
+  }
+
+  return parts.length ? parts.join(" / ") : "Немає USD або EUR";
+}
+
+function findNearestDate(targetDate) {
+  const targetTime = new Date(`${targetDate}T00:00:00`).getTime();
+  const dates = [...new Set(state.excelRecords.map((record) => record.date))];
+  let nearest = "";
+  let nearestDiff = Infinity;
+
+  for (const date of dates) {
+    const diff = Math.abs(new Date(`${date}T00:00:00`).getTime() - targetTime);
+
+    if (diff < nearestDiff) {
+      nearest = date;
+      nearestDiff = diff;
+    }
+  }
+
+  return nearest;
+}
+
+function formatDisplayDate(date) {
+  const [year, month, day] = date.split("-");
+  return `${day}.${month}.${year}`;
 }
 
 function renderLatestExcelCards() {
@@ -342,6 +441,8 @@ function renderCalculator() {
 
 function renderTable(records) {
   elements.tableBody.innerHTML = "";
+  const searchedDate = normalizeDateSearch(state.filters.dateSearch);
+  const highlightedDate = searchedDate && !hasExcelDate(searchedDate) ? findNearestDate(searchedDate) : searchedDate;
 
   const sortedRecords = [...records].sort((a, b) => {
     const dateOrder = b.date.localeCompare(a.date);
@@ -353,6 +454,10 @@ function renderTable(records) {
   for (const record of visibleRecords) {
     const row = document.createElement("tr");
     const badgeClass = record.currency.toLowerCase();
+
+    if (highlightedDate && record.date === highlightedDate) {
+      row.classList.add("highlight-row");
+    }
 
     row.innerHTML = `
       <td>${record.rowNumber}</td>

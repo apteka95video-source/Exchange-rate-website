@@ -48,7 +48,7 @@
       </section>
 
       <section class="filters-panel" aria-label="Filters">
-        <label>
+        <label class="currency-control">
           Валюта
           <select id="currencyFilter">
             <option value="">Усі</option>
@@ -56,6 +56,15 @@
             <option value="EUR">EUR</option>
           </select>
         </label>
+        <label class="date-search-control">
+          Пошук по даті
+          <input id="dateSearch" type="search" placeholder="10.10.2022 або 2022-10-10">
+        </label>
+        <div id="dateLookupPanel" class="date-lookup-panel">
+          <span>Пошук курсу</span>
+          <strong>Введіть дату</strong>
+          <small>Наприклад: 10.10.2022</small>
+        </div>
         <label>
           Від дати
           <input id="dateFrom" type="date">
@@ -63,10 +72,6 @@
         <label>
           До дати
           <input id="dateTo" type="date">
-        </label>
-        <label>
-          Пошук по даті
-          <input id="dateSearch" type="search" placeholder="10.10.2022 або 2022-10-10">
         </label>
         <button id="resetButton" type="button">Скинути</button>
       </section>
