@@ -158,15 +158,27 @@ h2 {
 
 .filters-panel {
   display: grid;
-  grid-template-columns: 160px minmax(260px, 1fr) minmax(280px, 420px) 160px 160px auto;
+  grid-template-columns: 150px 240px minmax(360px, 1fr) 140px;
   gap: 14px;
   align-items: stretch;
   margin-bottom: 18px;
   padding: 18px;
 }
 
-.date-search-control {
-  grid-column: span 1;
+.date-lookup-panel {
+  grid-column: span 2;
+}
+
+.date-from-control {
+  grid-column: 1 / 2;
+}
+
+.date-to-control {
+  grid-column: 2 / 3;
+}
+
+#resetButton {
+  grid-column: 4 / 5;
 }
 
 .date-lookup-panel {
@@ -209,6 +221,43 @@ h2 {
 .date-lookup-panel.warning {
   border-color: rgba(245, 158, 11, 0.62);
   box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
+}
+
+.date-suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.date-suggestion {
+  min-height: 42px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--text);
+  text-align: left;
+}
+
+.date-suggestion:hover {
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.date-suggestion span,
+.date-suggestion strong {
+  display: block;
+}
+
+.date-suggestion span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.date-suggestion strong {
+  margin-top: 3px;
+  font-size: 0.9rem;
 }
 
 label {
@@ -433,8 +482,14 @@ tbody tr.highlight-row:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .date-lookup-panel {
+  .date-lookup-panel,
+  #resetButton {
     grid-column: 1 / -1;
+  }
+
+  .date-from-control,
+  .date-to-control {
+    grid-column: auto;
   }
 }
 

@@ -1,6 +1,5 @@
 const DATA_URL = "./data/currency_rates.json";
 const EXCEL_SOURCE = "Міжбанк";
-const NBU_SOURCE = "НБУ API";
 const DISPLAY_LIMIT = 10;
 
 const state = {
@@ -181,18 +180,48 @@ function renderDateLookup() {
     elements.dateLookupPanel.innerHTML = `
       <span>Курс з Excel на ${escapeHtml(formatDisplayDate(normalizedDate))}</span>
       <strong>${formatLookupRates(recordsForDate)}</strong>
-      <small>Знайдено ${recordsForDate.length} запис(и) за цією датою.</small>
+      <small>Знайдено ${recordsForDate.length} запис(и). Курс також показано на графіку.</small>
     `;
     return;
   }
 
-  const nearestDate = findNearestDate(normalizedDate);
+  const nearbyDates = findNearbyDates(normalizedDate);
+  const suggestionButtons = renderSuggestionButtons(nearbyDates);
 
   elements.dateLookupPanel.classList.add("warning");
   elements.dateLookupPanel.innerHTML = `
     <span>На дату ${escapeHtml(formatDisplayDate(normalizedDate))} курсу немає</span>
-    <strong>Найближча дата: ${nearestDate ? escapeHtml(formatDisplayDate(nearestDate)) : "-"}</strong>
-    <small>${nearestDate ? formatLookupRates(state.excelRecords.filter((record) => record.date === nearestDate)) : "У Excel немає доступних дат."}</small>
+    <strong>Оберіть найближчу дату з Excel:</strong>
+    ${suggestionButtons || "<small>У Excel немає доступних дат.</small>"}
+  `;
+}
+
+function renderSuggestionButtons({ previous, next }) {
+  const suggestions = [];
+
+  if (previous) {
+    suggestions.push(renderSuggestionButton("Попередня дата", previous));
+  }
+
+  if (next && next !== previous) {
+    suggestions.push(renderSuggestionButton("Наступна дата", next));
+  }
+
+  if (!suggestions.length) {
+    return "";
+  }
+
+  return `<div class="date-suggestions">${suggestions.join("")}</div>`;
+}
+
+function renderSuggestionButton(label, date) {
+  const records = state.excelRecords.filter((record) => record.date === date);
+
+  return `
+    <button class="date-suggestion" type="button" data-date="${escapeHtml(date)}">
+      <span>${escapeHtml(label)}: ${escapeHtml(formatDisplayDate(date))}</span>
+      <strong>${formatLookupRates(records)}</strong>
+    </button>
   `;
 }
 
@@ -217,21 +246,44 @@ function formatLookupRates(records) {
 }
 
 function findNearestDate(targetDate) {
-  const targetTime = new Date(`${targetDate}T00:00:00`).getTime();
-  const dates = [...new Set(state.excelRecords.map((record) => record.date))];
-  let nearest = "";
-  let nearestDiff = Infinity;
+  const { previous, next } = findNearbyDates(targetDate);
+
+  if (!previous) {
+    return next || "";
+  }
+
+  if (!next) {
+    return previous;
+  }
+
+  const targetTime = dateToTime(targetDate);
+  const previousDiff = Math.abs(dateToTime(previous) - targetTime);
+  const nextDiff = Math.abs(dateToTime(next) - targetTime);
+
+  return previousDiff <= nextDiff ? previous : next;
+}
+
+function findNearbyDates(targetDate) {
+  const dates = [...new Set(state.excelRecords.map((record) => record.date))].sort();
+  let previous = "";
+  let next = "";
 
   for (const date of dates) {
-    const diff = Math.abs(new Date(`${date}T00:00:00`).getTime() - targetTime);
+    if (date < targetDate) {
+      previous = date;
+    }
 
-    if (diff < nearestDiff) {
-      nearest = date;
-      nearestDiff = diff;
+    if (date > targetDate) {
+      next = date;
+      break;
     }
   }
 
-  return nearest;
+  return { previous, next };
+}
+
+function dateToTime(date) {
+  return new Date(`${date}T00:00:00`).getTime();
 }
 
 function formatDisplayDate(date) {
@@ -321,35 +373,48 @@ function formatApiDate(date) {
 
 function renderChart(records) {
   const labels = [...new Set(records.map((record) => record.date))].sort();
-  const usdData = buildSeries(labels, records, "USD");
-  const eurData = buildSeries(labels, records, "EUR");
+  const chartLabels = labels.length === 1 ? [labels[0], `${labels[0]} `] : labels;
+  const usdData = buildSeries(chartLabels, records, "USD");
+  const eurData = buildSeries(chartLabels, records, "EUR");
+  const selectedCurrency = state.filters.currency;
 
   elements.chartSubtitle.textContent = labels.length
-    ? `Період: ${labels[0]} - ${labels.at(-1)}`
+    ? labels.length === 1
+      ? `Курс на дату: ${formatDisplayDate(labels[0])}`
+      : `Період: ${labels[0]} - ${labels.at(-1)}`
     : "Немає даних для графіка за обраними фільтрами.";
 
+  const datasets = [];
+
+  if (!selectedCurrency || selectedCurrency === "USD") {
+    datasets.push({
+      label: "USD з Excel",
+      data: usdData,
+      borderColor: "#22c55e",
+      backgroundColor: "rgba(34, 197, 94, 0.12)",
+      tension: labels.length === 1 ? 0 : 0.25,
+      spanGaps: true,
+      pointRadius: labels.length > 120 ? 0 : 3,
+      borderWidth: labels.length === 1 ? 3 : 2,
+    });
+  }
+
+  if (!selectedCurrency || selectedCurrency === "EUR") {
+    datasets.push({
+      label: "EUR з Excel",
+      data: eurData,
+      borderColor: "#f59e0b",
+      backgroundColor: "rgba(245, 158, 11, 0.14)",
+      tension: labels.length === 1 ? 0 : 0.25,
+      spanGaps: true,
+      pointRadius: labels.length > 120 ? 0 : 3,
+      borderWidth: labels.length === 1 ? 3 : 2,
+    });
+  }
+
   const chartData = {
-    labels,
-    datasets: [
-      {
-        label: "USD з Excel",
-        data: usdData,
-        borderColor: "#22c55e",
-        backgroundColor: "rgba(34, 197, 94, 0.12)",
-        tension: 0.25,
-        spanGaps: true,
-        pointRadius: labels.length > 120 ? 0 : 2,
-      },
-      {
-        label: "EUR з Excel",
-        data: eurData,
-        borderColor: "#f59e0b",
-        backgroundColor: "rgba(245, 158, 11, 0.14)",
-        tension: 0.25,
-        spanGaps: true,
-        pointRadius: labels.length > 120 ? 0 : 2,
-      },
-    ],
+    labels: chartLabels,
+    datasets,
   };
 
   if (state.chart) {
@@ -386,6 +451,9 @@ function renderChart(records) {
           ticks: {
             color: "#94a3b8",
             maxTicksLimit: 9,
+            callback: function tickLabel(value) {
+              return String(this.getLabelForValue(value)).trim();
+            },
           },
           grid: {
             color: "rgba(148, 163, 184, 0.12)",
@@ -413,7 +481,7 @@ function buildSeries(labels, records, currency) {
     }
   }
 
-  return labels.map((label) => byDate.get(label) ?? null);
+  return labels.map((label) => byDate.get(String(label).trim()) ?? null);
 }
 
 function renderCalculator() {
@@ -516,6 +584,14 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function selectSuggestedDate(date) {
+  const displayDate = formatDisplayDate(date);
+  state.filters.dateSearch = displayDate;
+  state.showAllRows = false;
+  elements.dateSearch.value = displayDate;
+  renderDashboard();
+}
+
 elements.currencyFilter.addEventListener("change", (event) => {
   state.filters.currency = event.target.value;
   state.showAllRows = false;
@@ -538,6 +614,16 @@ elements.dateSearch.addEventListener("input", (event) => {
   state.filters.dateSearch = event.target.value;
   state.showAllRows = false;
   renderDashboard();
+});
+
+elements.dateLookupPanel.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-date]");
+
+  if (!button) {
+    return;
+  }
+
+  selectSuggestedDate(button.dataset.date);
 });
 
 elements.resetButton.addEventListener("click", () => {
