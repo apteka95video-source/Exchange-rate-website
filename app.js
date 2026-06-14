@@ -104,14 +104,40 @@ function renderDashboard() {
 }
 
 function getFilteredExcelRecords() {
+  const normalizedDateSearch = normalizeDateSearch(state.filters.dateSearch);
+  const rawDateSearch = state.filters.dateSearch.trim();
+
   return state.excelRecords.filter((record) => {
     const matchesCurrency = !state.filters.currency || record.currency === state.filters.currency;
     const matchesFrom = !state.filters.dateFrom || record.date >= state.filters.dateFrom;
     const matchesTo = !state.filters.dateTo || record.date <= state.filters.dateTo;
-    const matchesSearch = !state.filters.dateSearch || record.date.includes(state.filters.dateSearch.trim());
+    const matchesSearch =
+      !rawDateSearch ||
+      (normalizedDateSearch ? record.date === normalizedDateSearch : record.date.includes(rawDateSearch));
 
     return matchesCurrency && matchesFrom && matchesTo && matchesSearch;
   });
+}
+
+function normalizeDateSearch(value) {
+  const query = value.trim();
+
+  if (!query) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(query)) {
+    return query;
+  }
+
+  const dateParts = query.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+
+  if (!dateParts) {
+    return "";
+  }
+
+  const [, day, month, year] = dateParts;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
 function renderLatestExcelCards() {
