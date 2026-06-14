@@ -9,7 +9,6 @@ const state = {
 const SOURCE_GROUPS = {
   excel: ["Міжбанк", "Company Excel"],
   nbu: ["НБУ API", "NBU API"],
-  minfin: ["Minfin Mizhbank API"],
 };
 
 const elements = {
@@ -19,7 +18,6 @@ const elements = {
   latestDate: document.querySelector("#latestDate"),
   excelSourceCount: document.querySelector("#excelSourceCount"),
   nbuSourceCount: document.querySelector("#nbuSourceCount"),
-  minfinSourceCount: document.querySelector("#minfinSourceCount"),
   searchInput: document.querySelector("#searchInput"),
   sourceFilter: document.querySelector("#sourceFilter"),
   resetButton: document.querySelector("#resetButton"),
@@ -42,6 +40,7 @@ async function loadRates() {
     render();
   } catch (error) {
     elements.tableBody.innerHTML = "";
+    elements.comparisonTableBody.innerHTML = "";
     elements.emptyState.hidden = false;
     elements.emptyState.textContent = "Currency data could not be loaded.";
     console.error(error);
@@ -49,6 +48,8 @@ async function loadRates() {
 }
 
 function populateSourceFilter(records) {
+  elements.sourceFilter.innerHTML = '<option value="">All sources</option>';
+
   const sources = [...new Set(records.map((record) => record.source).filter(Boolean))].sort();
 
   for (const source of sources) {
@@ -98,7 +99,6 @@ function renderSummary(records) {
 function renderSourceCards(records) {
   elements.excelSourceCount.textContent = countBySourceGroup(records, SOURCE_GROUPS.excel);
   elements.nbuSourceCount.textContent = countBySourceGroup(records, SOURCE_GROUPS.nbu);
-  elements.minfinSourceCount.textContent = countBySourceGroup(records, SOURCE_GROUPS.minfin);
 }
 
 function countBySourceGroup(records, sourceNames) {
@@ -164,11 +164,7 @@ function sourceRank(source) {
     return 2;
   }
 
-  if (SOURCE_GROUPS.minfin.includes(source)) {
-    return 3;
-  }
-
-  return 4;
+  return 3;
 }
 
 function renderTable(records) {

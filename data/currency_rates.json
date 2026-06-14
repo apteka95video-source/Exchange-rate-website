@@ -1,7 +1,7 @@
 {
   "source": "data/currency_rates.xlsx",
   "sheet": "currency_rates",
-  "generated_at": "2026-06-14T20:27:39Z",
+  "generated_at": "2026-06-14T21:06:03Z",
   "records": [
     {
       "date": "2009-01-05",

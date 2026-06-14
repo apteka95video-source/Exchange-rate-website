@@ -2,138 +2,115 @@
 
 Простий сайт для аналізу і відстеження курсів валют.
 
-A small GitHub Pages demo for the workflow:
-
-**Excel -> JSON -> GitHub repository -> GitHub Pages website**
-
-The site is intentionally simple: no React, no build tools, no npm, and no external frameworks.
-
-## Project Files
-
-- `index.html` - page markup
-- `style.css` - responsive styling
-- `app.js` - loads JSON, calculates summary values, filters rows, and calculates spread
-- `data/currency_rates.xlsx` - company-calculated Excel source data
-- `data/currency_rates.json` - generated website data
-- `scripts/prepare_currency_rates_workbook.py` - normalizes the source workbook
-- `scripts/fetch_api_rates_to_excel.py` - fetches NBU and Minfin API rates
-- `scripts/convert_excel_to_json.py` - Excel to JSON converter
-- `README.md` - project instructions
-
-## Prepare Excel Data
-
-The source workbook contains company-calculated rates on the original sheet.
-Before exporting JSON, normalize that sheet into the `currency_rates` sheet:
-
-```bash
-python scripts/prepare_currency_rates_workbook.py
-```
-
-The normalized sheet uses these columns:
+Проєкт показує workflow:
 
 ```text
-date, currency, currency_name, buy_rate, sell_rate, source, comment
+Excel -> NBU API -> JSON -> GitHub repository -> GitHub Pages website
 ```
 
-For the current company-calculated source, the workbook contains one rate per
-currency. The preparation script writes that value into both `buy_rate` and
-`sell_rate` and explains this in the `comment` column.
+Сайт без React, Vite, npm та зовнішніх фреймворків.
 
-## Convert Excel to JSON
+## Що показує сайт
 
-Run the converter from the project root:
+Сайт порівнює два джерела курсів:
 
-```bash
-python scripts/convert_excel_to_json.py
-```
+- `Міжбанк` - ваші вручну або самостійно розраховані курси з Excel.
+- `НБУ API` - офіційний курс НБУ, підтягнутий через API.
 
-The script reads:
-
-```text
-data/currency_rates.xlsx
-```
-
-and writes:
+Дані для сайту лежать у:
 
 ```text
 data/currency_rates.json
 ```
 
-## Planned API Sources
+Сайт читає саме JSON-файл, тому після зміни Excel треба знову згенерувати JSON.
 
-The next data layer can append external rates to the same normalized Excel
-sheet before JSON export.
+## Файли проєкту
 
-- NBU official exchange rates: use the National Bank of Ukraine JSON API by
-  date, currency code, or date range.
-- Minfin Mizhbank/interbank rates: use Minfin for Developers API. The API
-  requires a private key, so keep it outside the repository.
+- `index.html` - структура сторінки.
+- `style.css` - дизайн.
+- `app.js` - завантаження JSON, фільтри, таблиця, порівняння.
+- `data/currency_rates.xlsx` - Excel-файл з курсами.
+- `data/currency_rates.json` - згенеровані дані для сайту.
+- `scripts/prepare_currency_rates_workbook.py` - нормалізує Excel-таблицю.
+- `scripts/fetch_api_rates_to_excel.py` - додає курси НБУ.
+- `scripts/convert_excel_to_json.py` - конвертує Excel у JSON.
 
-All imported rows should still end up in:
+## Як оновлювати дані з Excel
+
+Так, Excel можна поповнювати новими вручну розрахованими курсами.
+
+Поточний файл має оригінальний аркуш `Лист2`, де є дати та курси валют.
+Після редагування Excel запустіть:
+
+```bash
+python scripts/prepare_currency_rates_workbook.py
+python scripts/convert_excel_to_json.py
+```
+
+Перший скрипт створює/оновлює аркуш `currency_rates` з колонками:
 
 ```text
 date, currency, currency_name, buy_rate, sell_rate, source, comment
 ```
 
-Fetch NBU + Minfin interbank rates for USD and EUR:
-
-```bash
-set MINFIN_API_KEY=your_minfin_key_here
-python scripts/fetch_api_rates_to_excel.py --date 2026-06-14 --currencies USD EUR
-python scripts/convert_excel_to_json.py
-```
-
-Fetch only NBU rates, without a Minfin key:
-
-```bash
-python scripts/fetch_api_rates_to_excel.py --sources nbu --date 2026-06-14 --currencies USD EUR
-python scripts/convert_excel_to_json.py
-```
-
-Minfin API examples documented by Minfin:
+Другий скрипт створює оновлений:
 
 ```text
-https://api.minfin.com.ua/mb/[key]/
-https://api.minfin.com.ua/mb/[key]/[YYYY-MM-DD]/
-https://api.minfin.com.ua/mb/latest/[key]/?currency=[currency-code]
+data/currency_rates.json
 ```
 
-## Open Locally
+Після цього сайт буде показувати оновлені дані після commit і push на GitHub.
 
-Open `index.html` in a browser.
+## Як додати курс НБУ
 
-If your browser blocks loading local JSON files, start a small local server from the project root:
+Наприклад, додати офіційний курс НБУ для USD та EUR за конкретну дату:
+
+```bash
+python scripts/fetch_api_rates_to_excel.py --date 2026-06-05 --currencies USD EUR
+python scripts/convert_excel_to_json.py
+```
+
+Скрипт додає рядки з джерелом `НБУ API`.
+
+## Як запустити сайт локально
+
+З кореня проєкту:
 
 ```bash
 python -m http.server 8000
 ```
 
-Then open:
+Потім відкрити:
 
 ```text
 http://localhost:8000
 ```
 
-## Push to GitHub
+## Як опублікувати оновлення
+
+Після зміни Excel, JSON або коду:
 
 ```bash
-git init
-git remote add origin https://github.com/apteka95video-source/Exchange-rate-website.git
 git add .
-git commit -m "Create currency rates GitHub Pages demo"
-git branch -M main
-git push -u origin main
+git commit -m "Update currency rates"
+git push
 ```
 
-If the repository is already initialized, skip `git init` and `git remote add origin`.
+GitHub Pages автоматично оновить сайт після push.
 
-## Enable GitHub Pages
+## GitHub Pages
 
-1. Open the GitHub repository.
-2. Go to **Settings**.
-3. Open **Pages**.
-4. Under **Build and deployment**, choose **Deploy from a branch**.
-5. Select the `main` branch and the `/root` folder.
-6. Save the settings.
+У репозиторії GitHub:
 
-GitHub will publish the static website after the Pages workflow finishes.
+```text
+Settings -> Pages
+```
+
+Налаштування:
+
+```text
+Source: Deploy from a branch
+Branch: main
+Folder: /root
+```
