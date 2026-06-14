@@ -1,5 +1,7 @@
 # currency-rates-github-pages
 
+Простий сайт для аналізу і відстеження курсів валют.
+
 A small GitHub Pages demo for the workflow:
 
 **Excel -> JSON -> GitHub repository -> GitHub Pages website**
