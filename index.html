@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Currency Rates Comparison</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Excel &rarr; API &rarr; JSON &rarr; GitHub Pages</p>
+        <h1>Currency Rates Comparison</h1>
+        <p class="intro">
+          Compare company-calculated Excel rates with official NBU rates and
+          Minfin interbank rates from one generated JSON file.
+        </p>
+      </header>
+
+      <section class="summary-grid" aria-label="Currency rates summary">
+        <article class="summary-card">
+          <span class="summary-label">Currencies</span>
+          <strong id="currencyCount">0</strong>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Sources</span>
+          <strong id="sourceCount">0</strong>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Records</span>
+          <strong id="recordCount">0</strong>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Latest update</span>
+          <strong id="latestDate">-</strong>
+        </article>
+      </section>
+
+      <section class="source-grid" aria-label="Data sources">
+        <article class="source-card source-excel">
+          <span>Company Excel</span>
+          <strong id="excelSourceCount">0</strong>
+          <small>Internal calculated rates from the workbook</small>
+        </article>
+        <article class="source-card source-nbu">
+          <span>NBU API</span>
+          <strong id="nbuSourceCount">0</strong>
+          <small>Official exchange rates</small>
+        </article>
+        <article class="source-card source-minfin">
+          <span>Minfin Interbank API</span>
+          <strong id="minfinSourceCount">0</strong>
+          <small>Bid and ask interbank rates</small>
+        </article>
+      </section>
+
+      <section class="controls" aria-label="Filters">
+        <label>
+          Search
+          <input id="searchInput" type="search" placeholder="USD or Dollar">
+        </label>
+        <label>
+          Source
+          <select id="sourceFilter">
+            <option value="">All sources</option>
+          </select>
+        </label>
+        <button id="resetButton" type="button">Reset filters</button>
+      </section>
+
+      <section class="comparison-section" aria-label="Latest rate comparison">
+        <div class="section-heading">
+          <h2>Latest comparison</h2>
+          <p>Newest rate by currency and source.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Currency</th>
+                <th>Source</th>
+                <th>Date</th>
+                <th>Buy rate</th>
+                <th>Sell rate</th>
+                <th>Spread</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="table-section" aria-label="Currency rates table">
+        <div class="section-heading table-heading">
+          <h2>All records</h2>
+          <p>Data generated from Excel and API imports.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Currency</th>
+                <th>Currency name</th>
+                <th>Buy rate</th>
+                <th>Sell rate</th>
+                <th>Spread</th>
+                <th>Source</th>
+                <th>Comment</th>
+              </tr>
+            </thead>
+            <tbody id="ratesTableBody"></tbody>
+          </table>
+        </div>
+        <p id="emptyState" class="empty-state" hidden>No records match the current filters.</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
