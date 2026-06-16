@@ -16,7 +16,6 @@ const state = {
 };
 
 const elements = {
-  datasetStatus: document.querySelector("#datasetStatus"),
   excelUsdRate: document.querySelector("#excelUsdRate"),
   excelUsdDate: document.querySelector("#excelUsdDate"),
   excelEurRate: document.querySelector("#excelEurRate"),
@@ -60,7 +59,6 @@ async function init() {
     renderDashboard();
     fetchLatestNbuRates();
   } catch (error) {
-    elements.datasetStatus.textContent = "Помилка завантаження даних";
     elements.emptyState.hidden = false;
     elements.emptyState.textContent = "Не вдалося завантажити JSON з курсами.";
     console.error(error);
@@ -91,7 +89,6 @@ function setDefaultDateInputs() {
   const latestDate = dates.at(-1) || "";
 
   elements.calcDate.value = latestDate;
-  elements.datasetStatus.textContent = `${state.excelRecords.length} Excel-записів`;
 }
 
 function renderDashboard() {

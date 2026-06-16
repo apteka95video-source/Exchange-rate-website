@@ -37,8 +37,7 @@ body {
 
 .topbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: end;
   margin-bottom: 24px;
 }
@@ -74,7 +73,6 @@ h2 {
   font-size: 1rem;
 }
 
-.status-card,
 .rate-card,
 .filters-panel,
 .chart-panel,
@@ -86,11 +84,6 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.status-card {
-  padding: 18px;
-}
-
-.status-card span,
 .card-kicker,
 .calc-result span {
   display: block;
@@ -100,12 +93,6 @@ h2 {
   text-transform: uppercase;
 }
 
-.status-card strong {
-  display: block;
-  margin-top: 8px;
-  color: var(--soft);
-  font-size: 1rem;
-}
 
 .rate-grid {
   display: grid;
