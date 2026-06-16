@@ -1,7 +1,7 @@
 {
   "source": "data/currency_rates.xlsx",
-  "sheet": "currency_rates",
-  "generated_at": "2026-06-15T19:35:02Z",
+  "sheet": "Лист2",
+  "generated_at": "2026-06-16T06:23:37Z",
   "records": [
     {
       "date": "2009-01-05",
@@ -78142,22 +78142,112 @@
       "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
     },
     {
-      "date": "2026-06-05",
+      "date": "2026-06-08",
       "currency": "USD",
       "currency_name": "US Dollar",
-      "buy_rate": 44.3793,
-      "sell_rate": 44.3793,
-      "source": "НБУ API",
-      "comment": "Official NBU exchange rate fetched at 2026-06-14"
+      "buy_rate": 44.4,
+      "sell_rate": 44.4,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
     },
     {
-      "date": "2026-06-05",
+      "date": "2026-06-08",
       "currency": "EUR",
       "currency_name": "Euro",
-      "buy_rate": 51.6686,
-      "sell_rate": 51.6686,
-      "source": "НБУ API",
-      "comment": "Official NBU exchange rate fetched at 2026-06-14"
+      "buy_rate": 51.73,
+      "sell_rate": 51.73,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-09",
+      "currency": "USD",
+      "currency_name": "US Dollar",
+      "buy_rate": 44.58,
+      "sell_rate": 44.58,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-09",
+      "currency": "EUR",
+      "currency_name": "Euro",
+      "buy_rate": 51.65,
+      "sell_rate": 51.65,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-10",
+      "currency": "USD",
+      "currency_name": "US Dollar",
+      "buy_rate": 44.85,
+      "sell_rate": 44.85,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-10",
+      "currency": "EUR",
+      "currency_name": "Euro",
+      "buy_rate": 52.1,
+      "sell_rate": 52.1,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-11",
+      "currency": "USD",
+      "currency_name": "US Dollar",
+      "buy_rate": 45.0,
+      "sell_rate": 45.0,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-11",
+      "currency": "EUR",
+      "currency_name": "Euro",
+      "buy_rate": 52.22,
+      "sell_rate": 52.22,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-12",
+      "currency": "USD",
+      "currency_name": "US Dollar",
+      "buy_rate": 44.92,
+      "sell_rate": 44.92,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-12",
+      "currency": "EUR",
+      "currency_name": "Euro",
+      "buy_rate": 52.17,
+      "sell_rate": 52.17,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-15",
+      "currency": "USD",
+      "currency_name": "US Dollar",
+      "buy_rate": 44.89,
+      "sell_rate": 44.89,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
+    },
+    {
+      "date": "2026-06-15",
+      "currency": "EUR",
+      "currency_name": "Euro",
+      "buy_rate": 52.17,
+      "sell_rate": 52.17,
+      "source": "Міжбанк",
+      "comment": "Internal company calculated rate. Buy and sell are equal because the source table contains one rate."
     }
   ]
 }
